@@ -57,6 +57,8 @@ parser.add_argument('--lam2', default=1, type=float)
 parser.add_argument('--lam3', default=10, type=float)
 parser.add_argument('--final_mlp_style', default='sep', type=str,choices = ['common','sep'])
 
+parser.add_argument('--pretrain_save_path', default=None, type=str)
+
 
 opt = parser.parse_args()
 modelsave_path = os.path.join(os.getcwd(),opt.savemodelroot,opt.task,str(opt.dset_id),opt.run_name)
@@ -166,6 +168,8 @@ model.to(device)
 if opt.pretrain:
     from pretraining import SAINT_pretrain
     model = SAINT_pretrain(model, cat_idxs,X_train,y_train, continuous_mean_std, opt,device)
+    if opt.pretrain_save_path:
+        torch.save(model, opt.pretrain_save_path)
 
 if opt.ssl_samples is not None and opt.ssl_samples > 0 :
     print('We are in semi-supervised learning case')

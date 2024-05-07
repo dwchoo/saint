@@ -4,6 +4,7 @@ from sklearn.preprocessing import LabelEncoder
 import pandas as pd
 from torch.utils.data import Dataset
 
+import pickle
 
 def simple_lapsed_time(text, lapsed):
     hours, rem = divmod(lapsed, 3600)
@@ -40,9 +41,25 @@ def data_split(X,y,nan_mask,indices):
     return x_d, y_d
 
 
-def data_prep_openml(ds_id, seed, task, datasplit=[.65, .15, .2]):
+def data_prep_openml(ds_id, seed, task, datasplit=[.65, .15, .2], file_name = 'tabular_data.pickle'):
     
     np.random.seed(seed) 
+    with open(file_name, 'rb') as f:
+        _table_data = pickle.load(f)
+    table_data = _table_data['mdi_cat']
+    cat_dims = table_data['cat_dims']
+    cat_idxs = table_data['cat_idxs']
+    con_idxs = table_data['con_idxs']
+    X_train  = table_data['X_train']
+    y_train  = table_data['y_train']
+    X_valid  = table_data['X_valid']
+    y_valid  = table_data['y_valid']
+    X_test   = table_data['X_test']
+    y_test   = table_data['y_test']
+    train_mean = table_data['train_mean']
+    train_std  = table_data['train_std']
+    #cat_dims, cat_idxs, con_idxs, X_train, y_train, X_valid, y_valid, X_test, y_test, train_mean, train_std
+    '''
     dataset = openml.datasets.get_dataset(ds_id)
     
     X, y, categorical_indicator, attribute_names = dataset.get_data(dataset_format="dataframe", target=dataset.default_target_attribute)
@@ -98,6 +115,7 @@ def data_prep_openml(ds_id, seed, task, datasplit=[.65, .15, .2]):
     train_mean, train_std = np.array(X_train['data'][:,con_idxs],dtype=np.float32).mean(0), np.array(X_train['data'][:,con_idxs],dtype=np.float32).std(0)
     train_std = np.where(train_std < 1e-6, 1e-6, train_std)
     # import ipdb; ipdb.set_trace()
+    '''
     return cat_dims, cat_idxs, con_idxs, X_train, y_train, X_valid, y_valid, X_test, y_test, train_mean, train_std
 
 

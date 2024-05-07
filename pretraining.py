@@ -1,11 +1,13 @@
 import torch
 from torch import nn
 
-from baselines.data_openml import data_prep_openml,task_dset_ids,DataSetCatCon
+from data_openml import data_prep_openml,task_dset_ids,DataSetCatCon
 from torch.utils.data import DataLoader
 import torch.optim as optim
 from augmentations import embed_data_mask
 from augmentations import add_noise
+
+from utils import CosineAnnealingWarmUpRestarts
 
 import os
 import numpy as np
@@ -14,7 +16,18 @@ def SAINT_pretrain(model,cat_idxs,X_train,y_train,continuous_mean_std,opt,device
     train_ds = DataSetCatCon(X_train, y_train, cat_idxs,opt.dtask, continuous_mean_std)
     trainloader = DataLoader(train_ds, batch_size=opt.batchsize, shuffle=True,num_workers=4)
     vision_dset = opt.vision_dset
-    optimizer = optim.AdamW(model.parameters(),lr=0.0001)
+    if hasattr(opt, 'pretrain_lr'):
+        optimizer = optim.AdamW(model.parameters(),lr=opt.pretrain_lr)
+    else:
+        optimizer = optim.AdamW(model.parameters(),lr=0.0001)
+    #scheduler = CosineAnnealingWarmUpRestarts(
+    #    optimizer, 
+    #    T_0=50,
+    #    T_mult=1,
+    #    eta_max=0.001,
+    #    T_up=10,
+    #    gamma=0.5
+    #)
     pt_aug_dict = {
         'noise_type' : opt.pt_aug,
         'lambda' : opt.pt_aug_lam
@@ -80,7 +93,7 @@ def SAINT_pretrain(model,cat_idxs,X_train,y_train,continuous_mean_std,opt,device
                 else:
                     l2 = 0
                 l1 = 0
-                # import ipdb; ipdb.set_trace()
+                #import ipdb; ipdb.set_trace()
                 n_cat = x_categ.shape[-1]
                 for j in range(1,n_cat):
                     l1+= criterion1(cat_outs[j],x_categ[:,j])
@@ -88,6 +101,8 @@ def SAINT_pretrain(model,cat_idxs,X_train,y_train,continuous_mean_std,opt,device
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
+
+        #scheduler.step(epoch)
         
         print(f'Epoch: {epoch}, Running Loss: {running_loss}')
 
